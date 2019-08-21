@@ -1,26 +1,113 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { Fragment, Component } from "react";
+import "./App.css";
+import { recipes } from "./tempList";
+import RecipeList from "./components/RecipeList";
+import RecipeDetails from "./components/RecipeDetails";
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+class App extends Component {
+  state = {
+    recipes: recipes,
+    url:
+      "https://www.food2fork.com/api/search?key=823ab93e361d428b44b31236e304e98c",
+    base_url:
+      "https://www.food2fork.com/api/search?key=823ab93e361d428b44b31236e304e98c",
+    details_id: 35375,
+    pageIndex: 1,
+    search: "",
+    query: "&q=",
+    error: ""
+  };
+
+  async getRecipes() {
+    try {
+      const data = await fetch(this.state.url);
+      const jsonData = await data.json();
+      console.log(jsonData);
+
+      if (jsonData.recipes.length === 0) {
+        this.setState(() => {
+          return { error: "Sorry, but your search did not return any results" };
+        });
+      } else {
+        this.setState(() => {
+          return { recipes: jsonData.recipes };
+        });
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  componentDidMount() {
+    this.getRecipes();
+  }
+
+  displayPage = index => {
+    switch (index) {
+      default:
+      case 1:
+        return (
+          <RecipeList
+            recipes={this.state.recipes}
+            handleDetails={this.handleDetails}
+            value={this.state.search}
+            handleChange={this.handleChange}
+            handleSubmit={this.handleSubmit}
+            error={this.state.error}
+          />
+        );
+      case 0:
+        return (
+          <RecipeDetails
+            id={this.state.details_id}
+            handleIndex={this.handleIndex}
+          />
+        );
+    }
+  };
+
+  handleIndex = index => {
+    this.setState({
+      pageIndex: index
+    });
+  };
+
+  handleDetails = (index, id) => {
+    this.setState({
+      pageIndex: index,
+      details_id: id
+    });
+  };
+
+  handleChange = e => {
+    this.setState(
+      {
+        search: e.target.value
+      },
+      () => {
+        console.log(this.state.search);
+      }
+    );
+  };
+
+  handleSubmit = e => {
+    e.preventDefault();
+    const { base_url, query, search } = this.state;
+
+    this.setState(
+      () => {
+        return { url: `${base_url}${query}${search}`, search: "" };
+      },
+      () => {
+        this.getRecipes();
+      }
+    );
+  };
+
+  render() {
+    // console.log(this.state.recipes);
+    return <Fragment>{this.displayPage(this.state.pageIndex)}</Fragment>;
+  }
 }
 
 export default App;
